@@ -1,73 +1,110 @@
 require("dotenv").config();
 
-var keys = require("./keys.js");
-
-var spotify = new Spotify(keys);
-console.log(keys);
-var client = new Twitter(keys.twitter);
-
-
+var keys = require('./keys');
+console.log('keys');
 
 var Spotify = require('node-spotify-api');
+var Twitter = require('twitter');
 
 
+var spotify = new Spotify(keys.spotify);
+var client =  new Twitter(keys.twitter);
 
-
-spotify.search({ type: 'track', query: 'All the Small Things' }, function(err, data) {
-  if (err) {
-    return console.log('Error occurred: ' + err);
-  }                           `1`
-
-console.log(data);
-});
-// INSTRUCTIONS:
-// ---------------------------------------------------------------------------------------------------------
-// Level 1:
-// Take any movie with a word title (ex: Cinderella) as a Node argument and retrieve the year it was created
-
-// Level 2 (More Challenging):
-//  Take a move with multiple words (ex: Forrest Gum p) as a Node argument and retrieve the year it was created.
-// ---------------------------------------------------------------------------------------------------------
-
-// Include the request npm package (Don't forget to run "npm install request" in this folder first!)
-var request = require("request");
-
-// Store all of the arguments in an array
 var nodeArgs = process.argv;
 
-// Create an empty variable for holding the movie name
+var request = require("request");
+
 var movieName = "";
 
-// Loop through all the words in the node argument
-// And do a little for-loop magic to handle the inclusion of "+"s
-for (var i = 2; i < nodeArgs.length; i++) {
+var fs = require("fs");
 
-  if (i > 2 && i < nodeArgs.length) {
+var method = process.argv[2];
+var type = process.argv[3];
+var query = process.argv[4];
 
-    movieName = movieName + "+" + nodeArgs[i];
+function callMethod(method, query) {
 
+  switch(method){
+    case("spotify-this-song"):
+      spotifySong(type,query)
+break;
+    case("my-tweets"):
+    twittermeth()
+break;
+    case("movie-this"):
+    omdpa(type)
+break;
+    case("do-what-it-says"):
+    readthis()
+break;
   }
 
-  else {
-
-    movieName += nodeArgs[i];
-
-  }
 }
 
-// Then run a request to the OMDB API with the movie specified
-var queryUrl = "http://www.omdbapi.com/?t=" + movieName + "&y=&plot=short&apikey=trilogy";
 
-// This line is just to help us debug against the actual URL.
-console.log(queryUrl);
+function spotifySong(type,query) {
+  spotify.search({type, query}, function(err, data) {
+    if (err) {
+      return console.log('Error occurred: ' + err);
+    }
 
-request(queryUrl, function(error, response, body) {
+  console.log(data[type+"s"].items);
+  });
+}
 
-  // If the request is successful
-  if (!error && response.statusCode === 200) {
+function twittermeth() {
+  var params = {screen_name: 'nodejs'};
+  client.get('statuses/user_timeline', params, function(error, tweets, response) {
+    if (!error) {
+      // console.log(tweets);
+      for ( var i = 0; i <tweets.length;i++){
+        console.log(tweets[i].text);
+      }
+    }
+  });
 
-    // Parse the body of the site and recover just the imdbRating
-    // (Note: The syntax below for parsing isn't obvious. Just spend a few moments dissecting it).
+}
+
+function omdpa(movieName) {
+
+  var queryUrl = "http://www.omdbapi.com/?t=" + movieName + "&y=&plot=short&apikey=trilogy";
+
+  console.log(queryUrl);
+  request(queryUrl, function(error, response, body) {
+
+    if (!error && response.statusCode === 200) {
+    console.log("The movie's rating is: " + JSON.parse(body).imdbRating);
     console.log("Release Year: " + JSON.parse(body).Year);
+    console.log("Ttile of the Movie: " + JSON.parse(body).Title);
+    console.log("Rated: " + JSON.parse(body).Rated);
+    console.log("Ratings: " + JSON.parse(body).Ratings);
+    console.log("Country: " + JSON.parse(body).Country);
+    console.log("Language: " + JSON.parse(body).Language);
+    console.log("Plot: " + JSON.parse(body).Plot);
+    console.log("Actors: " + JSON.parse(body).Actors);
+
+    }
+    else {
+  request("http://www.omdbapi.com/?t=Mr.+Nobody&y=&plot=short&apikey=trilogy")
   }
-});
+  });
+
+
+}
+
+function readthis(){
+
+  fs.readFile("random.txt", "utf8", function(error, data) {
+  if (error) {
+      return console.log(error);
+    }
+    console.log(data);
+  var dataArr = data.split(",");
+    console.log(dataArr);
+
+callMethod(dataArr[0],dataArr[1])
+  });
+}
+
+
+callMethod(method, query);
